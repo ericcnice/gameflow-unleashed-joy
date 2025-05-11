@@ -2,8 +2,6 @@
 import { Button } from './ui/button';
 import { Play } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from './ui/carousel';
-import { AspectRatio } from './ui/aspect-ratio';
 
 const HeroSection = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -51,8 +49,13 @@ const HeroSection = () => {
     videoRefs.current.forEach((video, index) => {
       if (video) {
         if (index === activeIndex) {
+          console.log(`Attempting to play video ${index}`);
           video.currentTime = 0;
-          video.play().catch(err => console.log('Video play error:', err));
+          const playPromise = video.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(err => console.log(`Video play error:`, err));
+          }
         } else {
           video.pause();
         }
@@ -63,30 +66,33 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-24 pb-20 overflow-hidden">
       {/* Background videos container */}
-      <div className="absolute inset-0 w-full h-full z-0">
+      <div className="absolute inset-0 w-full h-full">
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/60 z-10"></div>
         
-        {/* Videos - display directly without carousel first */}
+        {/* Videos */}
         {heroContent.map((item, index) => (
           <div 
-            key={index} 
-            className={`absolute inset-0 transition-opacity duration-1000 ${index === activeIndex ? 'opacity-100' : 'opacity-0'}`}
+            key={`hero-item-${index}`} 
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === activeIndex ? 'opacity-100 z-5' : 'opacity-0 z-1'
+            }`}
           >
             {item.type === 'video' && (
               <video
-                ref={el => videoRefs.current[index] = el}
+                ref={el => { videoRefs.current[index] = el }}
                 autoPlay
                 muted
                 loop
                 playsInline
                 className="w-full h-full object-cover"
+                preload="auto"
               >
                 <source src={item.src} type="video/mp4" />
                 Seu navegador não suporta a tag de vídeo.
               </video>
             )}
-            {item.type !== 'video' && (
+            {item.type === 'image' && (
               <img
                 src={item.src}
                 alt={item.alt}
@@ -101,7 +107,7 @@ const HeroSection = () => {
       <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2">
         {heroContent.map((_, index) => (
           <button 
-            key={index}
+            key={`indicator-${index}`}
             onClick={() => setActiveIndex(index)}
             className={`w-2 h-2 rounded-full transition-all duration-300 ${
               index === activeIndex ? 'bg-gameflow-orange w-6' : 'bg-white/50'
@@ -135,7 +141,7 @@ const HeroSection = () => {
       </button>
       
       {/* Hero content */}
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative z-20">
         <div className="max-w-4xl mx-auto text-center animate-fade-in">
           <h1 className="font-heading text-5xl md:text-7xl font-bold mb-8 tracking-tight">
             GameFlow. <br />
