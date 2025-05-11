@@ -1,6 +1,6 @@
 
 import { Button } from './ui/button';
-import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from './ui/carousel';
 import { AspectRatio } from './ui/aspect-ratio';
@@ -57,18 +57,20 @@ const HeroSection = () => {
           <CarouselContent className="h-full">
             {heroContent.map((item, index) => (
               <CarouselItem key={index} className="h-full">
-                {item.type === 'video' ? (
+                {item.type === 'video' && (
                   <video
                     autoPlay
                     muted
                     loop
                     playsInline
                     className="w-full h-full object-cover"
+                    key={item.src} // Add key for forcing re-render
                   >
                     <source src={item.src} type="video/mp4" />
                     Seu navegador não suporta a tag de vídeo.
                   </video>
-                ) : (
+                )}
+                {item.type !== 'video' && (
                   <img
                     src={item.src}
                     alt={item.alt}
