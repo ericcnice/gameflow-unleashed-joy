@@ -1,12 +1,13 @@
 
 import { Button } from './ui/button';
 import { Play } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from './ui/carousel';
 import { AspectRatio } from './ui/aspect-ratio';
 
 const HeroSection = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   
   const heroContent = [
     {
@@ -31,61 +32,72 @@ const HeroSection = () => {
     }
   ];
   
+  // Initialize video refs array
+  useEffect(() => {
+    videoRefs.current = videoRefs.current.slice(0, heroContent.length);
+  }, [heroContent.length]);
+
+  // Auto-advance carousel
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((current) => (current + 1) % heroContent.length);
-    }, 8000); // Muda a cada 8 segundos
+    }, 8000); // Changes every 8 seconds
     
     return () => clearInterval(interval);
   }, [heroContent.length]);
+
+  // Control video playback when active slide changes
+  useEffect(() => {
+    videoRefs.current.forEach((video, index) => {
+      if (video) {
+        if (index === activeIndex) {
+          video.currentTime = 0;
+          video.play().catch(err => console.log('Video play error:', err));
+        } else {
+          video.pause();
+        }
+      }
+    });
+  }, [activeIndex]);
   
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-24 pb-20 overflow-hidden">
-      {/* Background carousel */}
-      <div className="absolute inset-0 z-0">
+      {/* Background videos container */}
+      <div className="absolute inset-0 w-full h-full z-0">
+        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/60 z-10"></div>
-        <Carousel 
-          className="w-full h-full" 
-          opts={{ 
-            loop: true,
-            watchDrag: false, 
-            skipSnaps: true, 
-            startIndex: activeIndex,
-            align: 'center'
-          }}
-        >
-          <CarouselContent className="h-full">
-            {heroContent.map((item, index) => (
-              <CarouselItem key={index} className="h-full">
-                {item.type === 'video' && (
-                  <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                    key={item.src} // Add key for forcing re-render
-                  >
-                    <source src={item.src} type="video/mp4" />
-                    Seu navegador não suporta a tag de vídeo.
-                  </video>
-                )}
-                {item.type !== 'video' && (
-                  <img
-                    src={item.src}
-                    alt={item.alt}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="left-4 z-20 bg-gameflow-dark/50 border-gameflow-orange text-white hover:bg-gameflow-orange/80" onClick={() => setActiveIndex((current) => (current - 1 + heroContent.length) % heroContent.length)} />
-          <CarouselNext className="right-4 z-20 bg-gameflow-dark/50 border-gameflow-orange text-white hover:bg-gameflow-orange/80" onClick={() => setActiveIndex((current) => (current + 1) % heroContent.length)} />
-        </Carousel>
+        
+        {/* Videos - display directly without carousel first */}
+        {heroContent.map((item, index) => (
+          <div 
+            key={index} 
+            className={`absolute inset-0 transition-opacity duration-1000 ${index === activeIndex ? 'opacity-100' : 'opacity-0'}`}
+          >
+            {item.type === 'video' && (
+              <video
+                ref={el => videoRefs.current[index] = el}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              >
+                <source src={item.src} type="video/mp4" />
+                Seu navegador não suporta a tag de vídeo.
+              </video>
+            )}
+            {item.type !== 'video' && (
+              <img
+                src={item.src}
+                alt={item.alt}
+                className="w-full h-full object-cover"
+              />
+            )}
+          </div>
+        ))}
       </div>
       
-      {/* Indicadores de slide */}
+      {/* Slide indicators */}
       <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2">
         {heroContent.map((_, index) => (
           <button 
@@ -98,6 +110,29 @@ const HeroSection = () => {
           />
         ))}
       </div>
+      
+      {/* Navigation buttons */}
+      <button 
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-gameflow-dark/50 border border-gameflow-orange text-white h-8 w-8 rounded-full flex items-center justify-center hover:bg-gameflow-orange/80"
+        onClick={() => setActiveIndex((current) => (current - 1 + heroContent.length) % heroContent.length)}
+        aria-label="Slide anterior"
+      >
+        <span className="sr-only">Anterior</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+      </button>
+      
+      <button 
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-gameflow-dark/50 border border-gameflow-orange text-white h-8 w-8 rounded-full flex items-center justify-center hover:bg-gameflow-orange/80"
+        onClick={() => setActiveIndex((current) => (current + 1) % heroContent.length)}
+        aria-label="Próximo slide"
+      >
+        <span className="sr-only">Próximo</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
       
       {/* Hero content */}
       <div className="container mx-auto px-4 relative z-10">
